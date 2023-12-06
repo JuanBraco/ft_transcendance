@@ -11,12 +11,30 @@ import UserInfoDialog from "./dialog/UserInfoDialog";
 import axiosInstance from "../../utils/axiosInstance";
 
 function PlayerList() {
-  const { gameSocket, chatSocket, allPlayers, friendsList, blackList, setFriendsList } = useContext(UserContext);
+  const { gameSocket, chatSocket, allPlayers, blackList } = useContext(UserContext);
   const throwAsyncError = useThrowAsyncError();
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [selectedGames, setSelectedGames] = useState<GameMdl[] | null>(null);
   const [gameInvitationError, setGameInvitationError] = useState<string>("");
   const [display, setDisplay] = useState<boolean>(false);
+  const [friendsList, setFriendsList] = useState<User[]>([]);
+
+  async function getAllFriends() {
+    try {
+      const friendsList = await axiosInstance.get("/user/allFriends");
+      return friendsList;
+    } catch (error) {
+      throwAsyncError(error);
+    }
+  }
+  
+  useEffect(() => {
+    getAllFriends()
+      .then((info) => {
+        setFriendsList(info!.data.friends);
+      })
+      .catch((error) => throwAsyncError(error));
+  }, []);
 
   /*
    ** Handle game invite
@@ -81,7 +99,7 @@ function PlayerList() {
   const openUserDialog = async (user: User) => {
     setDisplay(true); // TEST LENA
     setSelectedUser(user);
-    const tmpUser = await axiosInstance.post('user/userById', user);
+    const tmpUser = await axiosInstance.post("user/userById", user);
     setSelectedUser(tmpUser.data);
   };
 
@@ -165,16 +183,16 @@ function PlayerList() {
         // overflowX: "auto",
         overflowY: "auto",
         borderRadius: 1,
-        height: 'calc(100vh - 120px)',
-        bgcolor: 'background.default', 
+        height: "calc(100vh - 120px)",
+        bgcolor: "background.default",
         // boxShadow: 'none', // Supprime l'ombre
-        border: `1px solid #366873` // Ajoute une bordure de couleur #366873
+        border: `1px solid #366873`, // Ajoute une bordure de couleur #366873
       }}
     >
       {gameInvitationError && <Typography color="error">{gameInvitationError}</Typography>}
-      <Typography className="PlayerList__title" sx={{color:'#015958', fontWeight:'bold', fontSize: '13px'}}>
-          Players
-        </Typography>
+      <Typography className="PlayerList__title" sx={{ color: "#015958", fontWeight: "bold", fontSize: "13px" }}>
+        Players
+      </Typography>
       <List className="PlayerList__list">
         <ListSubheader
           sx={{
@@ -182,8 +200,8 @@ function PlayerList() {
             maxWidth: 200,
             overflowY: "auto",
             borderRadius: 1,
-            bgcolor: 'background.default',
-            color:"black" 
+            bgcolor: "background.default",
+            color: "black",
           }}
         >
           Friends
@@ -196,8 +214,8 @@ function PlayerList() {
             maxWidth: 200,
             overflowY: "auto",
             borderRadius: 1,
-            bgcolor: 'background.default',
-            color:"black" 
+            bgcolor: "background.default",
+            color: "black",
           }}
         >
           Other players
@@ -210,8 +228,8 @@ function PlayerList() {
             maxWidth: 200,
             overflowY: "auto",
             borderRadius: 1,
-            bgcolor: 'background.default',
-            color:"black" 
+            bgcolor: "background.default",
+            color: "black",
           }}
         >
           Blocked players
@@ -221,13 +239,13 @@ function PlayerList() {
 
       {display && (
         <>
-        <UserInfoDialog
-          selectedUser={selectedUser}
-          selectedGames={selectedGames}
-          closeUserDialog={closeUserDialog}
-          isFriends={userIsFriend(selectedUser, friendsList)}
-          isBlocked={userIsBlocked(selectedUser, blackList)}
-        />
+          <UserInfoDialog
+            selectedUser={selectedUser}
+            selectedGames={selectedGames}
+            closeUserDialog={closeUserDialog}
+            isFriends={userIsFriend(selectedUser, friendsList)}
+            isBlocked={userIsBlocked(selectedUser, blackList)}
+          />
         </>
       )}
     </Paper>

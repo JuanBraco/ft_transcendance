@@ -26,8 +26,6 @@ interface UserContextProps {
   setUser: React.Dispatch<React.SetStateAction<UserDetails | null>>;
   allPlayers: User[];
   setPlayersList: React.Dispatch<React.SetStateAction<User[]>>;
-  friendsList: User[];
-  setFriendsList: React.Dispatch<React.SetStateAction<User[]>>;
   blackList: User[];
   setBlackList: React.Dispatch<React.SetStateAction<User[]>>;
   gameSocket: Socket | null;
@@ -41,8 +39,6 @@ const initialContext: UserContextProps = {
   setUser: () => {},
   allPlayers: [],
   setPlayersList: () => {},
-  friendsList: [],
-  setFriendsList: () => {},
   blackList: [],
   setBlackList: () => {},
   gameSocket: null,
@@ -66,7 +62,6 @@ function App() {
   //console.log("Debut fonction App");
   const [user, setUser] = useState<UserDetails | null>(null);
   const [allPlayers, setPlayersList] = useState<User[]>([]);
-  const [friendsList, setFriendsList] = useState<User[]>([]);
   const [blackList, setBlackList] = useState<User[]>([]);
   const [gameSocket, setGameSocket] = useState<Socket | null>(null);
   const [chatSocket, setChatSocket] = useState<Socket | null>(null);
@@ -134,8 +129,6 @@ function App() {
         setUser,
         allPlayers,
         setPlayersList,
-        friendsList,
-        setFriendsList,
         blackList,
         setBlackList,
         gameSocket,

@@ -94,7 +94,7 @@ const createData = (game: GameMdl) => {
 
 function Profile() {
   // console.log("debut Profile");
-  const { user, chatSocket, friendsList } = useContext(UserContext);
+  const { user, chatSocket } = useContext(UserContext);
   const [openSettings, setOpenSettings] = useState<boolean>(false);
   const [selectedGames, setSelectedGames] = useState<GameMdl[]>([]);
   const [selectedUser, setSelectedUser] = useState<UserDetails | null>(null);
@@ -185,14 +185,6 @@ function Profile() {
       });
     }
     return victories;
-  }
-
-  function getNumberOfFriends() {
-    let friendsNbr: number = 0;
-    if (friendsList) {
-      friendsNbr = friendsList.length;
-    }
-    return friendsNbr;
   }
 
   return (

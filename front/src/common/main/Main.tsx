@@ -46,7 +46,7 @@ const Main: React.FC = () => {
   //console.log("Debut fonction Main");
   
   const cookies = new Cookies();
-  const { user, chatSocket, setChatSocket, setPlayersList, setFriendsList, setBlackList, setUser } = useContext(UserContext);
+  const { user, chatSocket, setChatSocket, setPlayersList, setBlackList, setUser } = useContext(UserContext);
   const throwAsyncError = useThrowAsyncError();
   const [display, setDisplay] = useState<boolean>(false);
 
@@ -57,15 +57,6 @@ const Main: React.FC = () => {
       try {
         const users = await axiosInstance.get("/user/all");
         return users;
-      } catch (error) {
-        throwAsyncError(error);
-      }
-    }
-
-    async function getAllFriends() {
-      try {
-        const friendsList = await axiosInstance.get("/user/allFriends");
-        return friendsList;
       } catch (error) {
         throwAsyncError(error);
       }
@@ -109,12 +100,6 @@ const Main: React.FC = () => {
             })
           )
         )
-        .catch((error) => throwAsyncError(error));
-
-      getAllFriends()
-        .then((info) => {
-          setFriendsList(info!.data.friends);
-        })
         .catch((error) => throwAsyncError(error));
 
       getBlockedPlayers()
