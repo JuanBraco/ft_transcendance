@@ -27,7 +27,7 @@ function PlayerList() {
       throwAsyncError(error);
     }
   }
-  
+
   useEffect(() => {
     getAllFriends()
       .then((info) => {
@@ -90,11 +90,6 @@ function PlayerList() {
       </ListItem>
     ));
   };
-
-  // function onGetUserInfo(data: any) {
-  //   setSelectedUser(data.userinfo);
-  //   setSelectedGames(data.gamesInfo);
-  // }
 
   const openUserDialog = async (user: User) => {
     setDisplay(true); // TEST LENA
@@ -174,71 +169,23 @@ function PlayerList() {
    */
 
   return (
-    <Paper
-      elevation={3}
-      sx={{
-        marginTop: 2,
-        // maxWidth: 200,
-        // minWidth: 150,
-        // overflowX: "auto",
-        overflowY: "auto",
-        borderRadius: 1,
-        height: "calc(100vh - 120px)",
-        bgcolor: "background.default",
-        // boxShadow: 'none', // Supprime l'ombre
-        border: `1px solid #366873`, // Ajoute une bordure de couleur #366873
-      }}
-    >
+    <Paper elevation={3} sx={{ marginTop: 2, overflowY: "auto", height: "calc(100vh - 120px)", border: `1px solid #366873` }}>
       {gameInvitationError && <Typography color="error">{gameInvitationError}</Typography>}
       <Typography className="PlayerList__title" sx={{ color: "#015958", fontWeight: "bold", fontSize: "13px" }}>
         Players
       </Typography>
       <List className="PlayerList__list">
-        <ListSubheader
-          sx={{
-            marginTop: 2,
-            maxWidth: 200,
-            overflowY: "auto",
-            borderRadius: 1,
-            bgcolor: "background.default",
-            color: "black",
-          }}
-        >
-          Friends
-        </ListSubheader>
+        <ListSubheader sx={{ maxWidth: 200, color: "black" }}>Friends</ListSubheader>
         {generateUserList(allPlayers.filter((user) => userIsFriend(user, friendsList)))}
         <Divider />
-        <ListSubheader
-          sx={{
-            marginTop: 2,
-            maxWidth: 200,
-            overflowY: "auto",
-            borderRadius: 1,
-            bgcolor: "background.default",
-            color: "black",
-          }}
-        >
-          Other players
-        </ListSubheader>
+        <ListSubheader sx={{ maxWidth: 200, color: "black" }}>Other players</ListSubheader>
         {generateUserList(allPlayers.filter((user) => userIsOther(user, friendsList, blackList)))}
         <Divider />
-        <ListSubheader
-          sx={{
-            marginTop: 2,
-            maxWidth: 200,
-            overflowY: "auto",
-            borderRadius: 1,
-            bgcolor: "background.default",
-            color: "black",
-          }}
-        >
-          Blocked players
-        </ListSubheader>
+        <ListSubheader sx={{ maxWidth: 200, color: "black" }}>Blocked players</ListSubheader>
         {generateUserList(allPlayers.filter((user) => userIsBlocked(user, blackList)))}
       </List>
 
       {display && (
-        <>
           <UserInfoDialog
             selectedUser={selectedUser}
             selectedGames={selectedGames}
@@ -246,7 +193,6 @@ function PlayerList() {
             isFriends={userIsFriend(selectedUser, friendsList)}
             isBlocked={userIsBlocked(selectedUser, blackList)}
           />
-        </>
       )}
     </Paper>
   );

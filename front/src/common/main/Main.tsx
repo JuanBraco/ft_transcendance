@@ -16,7 +16,6 @@ import Profile from "./Profile";
 import SettingsDialog from "../header/dialogs/SettingsDialog";
 import { Box, Grid, ThemeProvider, Typography, createTheme } from "@mui/material";
 import { fetchUserDetails } from "../../features/chat/fetchData";
-//import { useRouteMatch } from "react-router-dom";
 
 const theme = createTheme({
   palette: {
@@ -43,8 +42,6 @@ const theme = createTheme({
 });
 
 const Main: React.FC = () => {
-  //console.log("Debut fonction Main");
-  
   const cookies = new Cookies();
   const { user, chatSocket, setChatSocket, setPlayersList, setBlackList, setUser } = useContext(UserContext);
   const throwAsyncError = useThrowAsyncError();
@@ -78,14 +75,6 @@ const Main: React.FC = () => {
           query: { tokenJwt: cookies.get("jwt") },
         })
       );
-      //console.log("chat socket created");
-      // setGameSocket(
-      //   io(baseURL + "/game", {
-      //     forceNew: true,
-      //     query: { tokenJwt: cookies.get("jwt") },
-      //   })
-      // );
-      // console.log("game socket created");
     } catch (error) {
       throwAsyncError(error);
     }
