@@ -6,14 +6,13 @@ import { Socket, io } from "socket.io-client";
 import * as CONSTANTS from "./constants";
 import { GameMessage } from "./utils/DisplayGame";
 import { GameResponse } from "../../model/GameResponse";
-import { Box, Container, Typography } from "@mui/material";
 import baseURL from "../../utils/baseURL";
 import { Cookies } from "react-cookie";
 import axiosInstance from "../../utils/axiosInstance";
-import DrawSketch from './DrawSketch';
+import DrawSketch from "./DrawSketch";
+import { Box, Typography } from "@mui/material";
 
 function Game() {
-
   const cookies = new Cookies();
 
   const { user, gameSocket, setGameSocket } = useContext(UserContext);
@@ -23,10 +22,6 @@ function Game() {
   const [winner, setWinner] = useState<string>("");
   const [hostPlayerR, setHostPlayer] = useState<User | null>(null);
   const [joinPlayerL, setJoinPlayer] = useState<User | null>(null);
-
-  const gameContainerHeightRef = useRef<HTMLDivElement>(null);
-
-
 
   const gameSocketRef = useRef<Socket | null>(null);
 
@@ -63,8 +58,6 @@ function Game() {
     };
   }, [gameSocket]);
 
-
-
   useEffect(() => {
     async function checkUserInGame() {
       try {
@@ -79,7 +72,6 @@ function Game() {
 
     checkUserInGame();
   }, []);
-  
 
   useEffect(() => {
     // Call it initially to set the initial sizes
@@ -92,9 +84,9 @@ function Game() {
 
     gameSocketRef.current = socket;
     return () => {
-        if (gameSocketRef.current) {
-          gameSocketRef.current.disconnect();
-        }
+      if (gameSocketRef.current) {
+        gameSocketRef.current.disconnect();
+      }
     };
   }, []);
 
@@ -110,44 +102,35 @@ function Game() {
   const renderGameStatus = () => {
     switch (gameStatus) {
       case "LIVE":
-        return <DrawSketch setGameStatus={setGameStatus} hostPlayerR={hostPlayerR} joinPlayerL={joinPlayerL} room={room} setWinner={setWinner}/>;
+        return <DrawSketch setGameStatus={setGameStatus} hostPlayerR={hostPlayerR} joinPlayerL={joinPlayerL} room={room} setWinner={setWinner} />;
       case "PAUSE":
         return (
-          <Box sx={{ textAlign: 'center' }}>
-            <Typography variant="h6">Waiting for opponent...</Typography>
-          </Box>
-          );
+          <div className="text-center">
+            <h6 className="text-lg">Waiting for opponent...</h6>
+          </div>
+        );
       case "ENDED":
         return <GameMessage player={winner} message={CONSTANTS.MSG_END} subMessage={CONSTANTS.SUBMSG_END} handleJoinGame={handleJoinGame} />;
       case "ERROR":
-        return gameInvitationError && <div style={{ color: "red" }}>{gameInvitationError}</div>;
+        return gameInvitationError && <div className="text-red-500">{gameInvitationError}</div>;
       default:
         return (
-          <Box sx={{ textAlign: "center" }}>
+          <div className="text-center">
             <GameMessage player={user!.fullName} message={CONSTANTS.MSG_START} subMessage={CONSTANTS.SUBMSG_START} handleJoinGame={handleJoinGame} />
             {/* <img src="https://www.primarygames.com/arcade/classic/pongclassic/logo200.png" alt="Pong Logo" style={{ maxWidth: '100%', height: 'auto' }} /> */}
-            <img
-              src="https://www.hiig.de/wp-content/uploads/2014/11/Pong1-1200x900.jpg"
-              alt="Pong Logo"
-              style={{ maxWidth: "50%", height: "auto" }}
-            />
-          </Box>
+            <img src="https://www.hiig.de/wp-content/uploads/2014/11/Pong1-1200x900.jpg" alt="Pong Logo" className="max-w-1/2 h-auto" />
+          </div>
         );
     }
   };
 
   return (
     <>
-      <Box
-        sx={{ marginTop: 2, marginLeft: 2, borderRadius: 1, border: `1px solid #366873`, height: "calc(100vh - 120px)", overflowY: "auto" }}
-        ref={gameContainerHeightRef}
-      >
-        <Container component="main" maxWidth={false}>
-          <Typography className="PlayerList__title" sx={{ color: "#015958", fontWeight: "bold", fontSize: "13px" }}>
-            Game
-          </Typography>
-          <div className="game-sketch">{renderGameStatus()}</div>
-        </Container>
+       <Box sx={{ marginTop: 2, marginLeft: 2, borderRadius: 1, border: `1px solid #366873`, height: "calc(100vh - 120px)", overflowY: "auto" }}>
+        <div className="container mx-auto relative h-screen overflow-hidden">
+        <Typography className="PlayerList__title" sx={{ color: "#015958", fontWeight: "bold", fontSize: "13px" }}>Game</Typography>
+          <div className="game-sketch abolute inset-0">{renderGameStatus()}</div>
+        </div>
       </Box>
     </>
   );
