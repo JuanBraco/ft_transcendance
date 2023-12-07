@@ -14,7 +14,7 @@ import { useLocation } from "react-router-dom";
 import Leaderboard from "./Leaderboard";
 import Profile from "./Profile";
 import SettingsDialog from "../header/dialogs/SettingsDialog";
-import { Box, Grid, ThemeProvider, Typography, createTheme } from "@mui/material";
+import { Grid, ThemeProvider, createTheme } from "@mui/material";
 import { fetchUserDetails } from "../../features/chat/fetchData";
 
 const theme = createTheme({

@@ -37,108 +37,73 @@ export class GameService {
         include: { owner: true, players: true },
       });
 
-      if (checkGame.players[0] && checkGame.players[0].isPlaying) {
-        const updatedGame = await this.prisma.game.update({
-          where: { id: gameId },
-          data: {
-            players: { connect: { id: user.id } },
-            full: true,
-            status: 'LIVE',
-          },
-          include: { owner: true, players: true },
-        });
-        return updatedGame;
-      } else {
-        const updatedGame = await this.prisma.game.update({
-          where: { id: gameId },
-          data: {
-            players: { connect: { id: user.id } },
-            full: true,
-            status: 'PAUSE',
-          },
-          include: { owner: true, players: true },
-        });
-        return updatedGame;
+      if (!checkGame) {
+        throw new Error('Game not found');
       }
+
+      const gameStatus = checkGame.players[0] && checkGame.players[0].isPlaying ? 'LIVE' : 'PAUSE';
+
+      // Update the game with the new player
+      const updatedGame = await this.prisma.game.update({
+        where: { id: gameId },
+        data: {
+          players: { connect: { id: user.id } },
+          full: true,
+          status: gameStatus,
+        },
+        include: { owner: true, players: true },
+      });
+
+      return updatedGame;
     } catch (error) {
       throw error;
     }
   }
 
-  async storeScore(gameId: string, scoreR: number, scoreL: number, end: boolean) {
+  async storeScore(gameId: string, scoreR: number, scoreL: number) {
     try {
-      if (gameId && end) {
-        const game = await this.prisma.game.findUnique({
-          where: { id: gameId },
-          include: {
-            owner: true,
-            players: true,
-          },
-        });
-
-        if (!game) {
-          throw new Error('Game not found');
-        }
-
-        let winnerId: string;
-
-        if (scoreR > scoreL) {
-          winnerId = game.ownerId; // Owner wins
-        } else {
-          const otherPlayer = game.players.find((player) => player.id !== game.ownerId);
-          winnerId = otherPlayer ? otherPlayer.id : null; // Other player wins, if exists
-        }
-
-        if (winnerId) {
-          await this.prisma.game.update({
-            where: { id: gameId },
-            data: { winnerId, finished: true },
-          });
-        }
-
-        const updatedGame = await this.prisma.game.update({
-          where: { id: gameId },
-          data: {
-            scoreR: scoreR,
-            scoreL: scoreL,
-            winner: { connect: { id: winnerId } },
-            status: 'ENDED',
-          },
-          include: {
-            players: true,
-          },
-        });
-        this.removeUserPlaying(updatedGame.players[0]);
-        this.removeUserPlaying(updatedGame.players[1]);
-        if (winnerId) {
-          const winnerDetail = await this.prisma.user.findUnique({
-            where: { id: winnerId },
-            include: { winnerOf: true },
-          });
-
-          await this.prisma.user.update({
-            where: { id: winnerDetail.id },
-            data: {
-              expert: winnerDetail.winnerOf.length > 0 ? true : false,
-            },
-          });
-        }
-        return updatedGame;
+      if (!gameId) {
+        throw new Error('Invalid game ID');
       }
-      if (gameId && !end) {
-        console.log('HEREEEEE GAME SCOREEEEE', scoreL, scoreR);
-        const updatedGame2 = await this.prisma.game.update({
-          where: { id: gameId },
-          data: {
-            scoreR: scoreR,
-            scoreL: scoreL,
-          },
-        });
-        return updatedGame2;
+      const game = await this.prisma.game.findUnique({
+        where: { id: gameId },
+        include: { owner: true, players: true },
+      });
+
+      if (!game) {
+        throw new Error('Game not found');
       }
+
+      const winnerId = scoreR > scoreL ? game.ownerId : game.players.find((player) => player.id !== game.ownerId)?.id;
+
+      const updatedGame = await this.prisma.game.update({
+        where: { id: gameId },
+        data: {
+          scoreR: scoreR,
+          scoreL: scoreL,
+          winner: { connect: { id: winnerId } },
+          finished: true,
+          status: 'ENDED',
+        },
+        include: { players: true },
+      });
+
+      const winnerDetail = await this.prisma.user.findUnique({
+        where: { id: winnerId },
+        include: { winnerOf: true },
+      });
+
+      await this.prisma.user.update({
+        where: { id: winnerId },
+        data: { expert: winnerDetail.winnerOf.length > 0 ? true : false },
+      });
+
+      this.removeUserPlaying(updatedGame.players[0]);
+      this.removeUserPlaying(updatedGame.players[1]);
+
+      return updatedGame;
     } catch (error) {
       console.error('Error updating game:', error);
-      // You can add additional error handling or rethrow the error if needed.
       throw error;
     }
   }
@@ -166,7 +131,6 @@ export class GameService {
   async getLowestPositionGame() {
     return await this.prisma.game.findFirst({
       where: { full: false, type: 'PUBLIC' },
-      // orderBy: { position: 'asc' },
       include: { players: true },
     });
   }
@@ -188,9 +152,7 @@ export class GameService {
         select: {
           playerOf: {
             where: { status: 'PAUSE' },
-            include: {
-              players: true, // Include players to access their 'isPlaying' and 'online' status
-            },
+            include: { players: true },
             take: 1,
           },
         },

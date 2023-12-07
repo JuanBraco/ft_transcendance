@@ -42,7 +42,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       gameState.update();
       const stat = gameState.getState();
       if (stat.scoreL == 3 || stat.scoreR == 3) {
-        this.gameService.storeScore(roomId, stat.scoreR, stat.scoreL, true);
+        this.gameService.storeScore(roomId, stat.scoreR, stat.scoreL);
         this.stopGameLoop(roomId);
       }
       this.server.to(roomId).emit('gameStateUpdate', gameState.getState());
@@ -267,11 +267,6 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       });
       this.server.to(game.id).emit('updateMode', game);
     }
-  }
-
-  @SubscribeMessage('storeScore')
-  async storeScore(@MessageBody() data: any, @ConnectedSocket() client: any) {
-    this.gameService.storeScore(data.gameId, data.scoreR, data.scoreL, data.end);
   }
 
   @SubscribeMessage('paddleMove')
