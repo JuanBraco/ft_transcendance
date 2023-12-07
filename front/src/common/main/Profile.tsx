@@ -17,12 +17,25 @@ import {
   Button,
 } from "@mui/material";
 import SettingsDialog from "../header/dialogs/SettingsDialog";
-import { GameMdl } from "../../model/GameMdl";
 import MilitaryTechIcon from "@mui/icons-material/MilitaryTech";
 import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
 import { useLocation } from "react-router-dom";
 import { useParams } from "react-router-dom";
 import { UserDetails } from "../../model/UserDetails";
+import { User } from "../../model/User";
+
+interface GameMdl {
+  id: string;
+  players: User[];
+  scoreR: number;
+  scoreL: number;
+  error: string;
+  mode: string;
+  status: string;
+  winnerId: string;
+  type: string;
+  owner: User;
+}
 
 const StyledTableHeadCell = styled(TableCell)(() => ({
   backgroundColor: '#366873', // Couleur de fond de l'en-tête
@@ -116,18 +129,12 @@ function Profile() {
   }, [location]);
 
   function onGetUserInfo(data: any) {
-    // console.log("data user info", data.userinfo);
-    // console.log("data game info", data.gamesInfo);
     if (data.gamesInfo) {
-      // console.log("enter if");
       setSelectedGames(data.gamesInfo);
     } else {
-      // console.log("enterelse");
       setSelectedGames([]);
     }
     setSelectedUser(data.userinfo);
-    // console.log("userSlected", selectedUser);
-    // console.log("selectedgames", selectedGames);
   }
 
   // chaque fois que users change, le composant sera rendu à nouveau et leaderboardRows sera recalculé

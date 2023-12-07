@@ -1,5 +1,4 @@
 import { FC, useContext, useEffect, useState } from "react";
-import { GameMdl } from "../../../model/GameMdl";
 import { User } from "../../../model/User";
 import { Avatar, Button, Dialog, DialogActions, DialogContent, Typography } from "@mui/material";
 import { useThrowAsyncError } from "../../../utils/useThrowAsyncError";
@@ -15,7 +14,6 @@ import { useLocation } from "react-router-dom";
 
 interface UserListProps {
   selectedUser: User | null;
-  selectedGames: GameMdl[] | null;
   closeUserDialog: () => void;
   isFriends: boolean;
   isBlocked: boolean;
@@ -33,42 +31,30 @@ const UserInfoDialog: FC<UserListProps> = ({ selectedUser, closeUserDialog, isFr
   async function getFriendRequests() {
     try {
       const res = await axiosInstance.get("/user/userFriendRequests");
-
-      return res.data;
+      return res.data.filter(
+        (request: any) =>
+          [user!.nickname, selectedUser!.nickname].includes(request.user1) && [user!.nickname, selectedUser!.nickname].includes(request.user2)
+      );
     } catch (error: unknown) {
       throwAsyncError(error as Error);
     }
   }
 
   useEffect(() => {
-    if (user && selectedUser) {
-      getFriendRequests()
-        .then((data) => {
-          const pendings = data.filter((request: any) => {
-            if (
-              (request.user1 === user!.nickname && request.user2 === selectedUser!.nickname) ||
-              (request.user2 === user!.nickname && request.user1 === selectedUser!.nickname)
-            ) {
-              return true;
-            }
-            return false;
-          });
-          if (pendings.length !== 0) setPendingRequest(true);
-          else setPendingRequest(false);
-        })
-        .catch((error) => throwAsyncError(error));
-    }
-  }); // dependency on mount cant be used
+    if (!user || !selectedUser) return;
+
+    getFriendRequests()
+      .then((pendings) => setPendingRequest(pendings.length !== 0))
+      .catch((error) => throwAsyncError(error));
+  }, [user, selectedUser]);
 
   useEffect(() => {
     setGameInvitationError("");
   }, [closeUserDialog]);
 
   function onAddFriend(userTarget: User) {
-    const host = user!.nickname;
-    const player = userTarget.nickname;
     try {
-      chatSocket!.emit("friendRequest", { host, player }, (response: ChatResponse) => {
+      chatSocket!.emit("friendRequest", { host: user!.nickname, player: userTarget.nickname }, (response: ChatResponse) => {
         if (!response.ok) throwAsyncError("Error sending Friend request " + response.status + " " + response.statusText);
       });
       closeUserDialog();
@@ -130,6 +116,7 @@ const UserInfoDialog: FC<UserListProps> = ({ selectedUser, closeUserDialog, isFr
           }
         });
       }
+      closeUserDialog();
     } catch (error: unknown) {
       throwAsyncError(error as Error);
     }
@@ -140,9 +127,7 @@ const UserInfoDialog: FC<UserListProps> = ({ selectedUser, closeUserDialog, isFr
     navigate(`/profile/${selectedUser!.id}`);
   };
 
-  if (!selectedUser) {
-    return null;
-  }
+  if (!selectedUser) return null;
 
   return (
     <Dialog open={true} onClose={closeUserDialog}>

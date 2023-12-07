@@ -118,17 +118,11 @@ const Main: React.FC = () => {
           return false;
         })
       );
-      // const userDB = users.find(({ nickname }) => nickname === user!.nickname);
-      // if (userDB && user) {
-      //   const updatedUserDetails = user;
-      //   if (updatedUserDetails.isPlaying !== userDB.isPlaying){
           fetchUserDetails()
             .then(userDetailsDB => {
               setUser(userDetailsDB);
             })
             .catch(error => throwAsyncError(error));
-      //   }
-      // }
     }
 
     try {

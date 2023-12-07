@@ -96,11 +96,9 @@ async function changeSettings(fullName: string, nickname: string, email: string)
         throw new Error(data.message);
       }
       updatedUser = data;
-      // console.log("DATAAAA RECEIVED IN CHANGE SETTINGS", updatedUser);
       return updatedUser;
     })
     .catch((error) => {
-      // console.log("Error changing settings: ", error);
       throw error;
     });
   return updatedUser;
@@ -143,7 +141,6 @@ async function checkCurrentPassword(currentPassword: string) {
   })
     .then((res) => res.json())
     .then((data) => {
-      // console.log("check current password return", data);
       if (data.message) {
         throw new Error(data.message);
       } else {
@@ -151,7 +148,6 @@ async function checkCurrentPassword(currentPassword: string) {
       }
     })
     .catch((error) => {
-      // console.log("Error changing settings: ", error);
       throw error;
     });
   return true;
@@ -161,7 +157,6 @@ async function updatePassword(newPassword: string) {
   let updatedUser: UserDetails | null = null;
 
   const response = await axiosInstance.post("/user/updatePassword", { newPassword: newPassword });
-  // console.log("RESPONSE: ", response);
   updatedUser = response.data;
   return updatedUser;
 }

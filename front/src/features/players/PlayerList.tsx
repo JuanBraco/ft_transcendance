@@ -6,7 +6,6 @@ import { Avatar, Divider, List, ListItem, ListItemAvatar, ListItemText, ListSubh
 import { ChatResponse } from "../../model/ChatResponse";
 import { UserContext } from "../../App";
 import { useThrowAsyncError } from "../../utils/useThrowAsyncError";
-import { GameMdl } from "../../model/GameMdl";
 import UserInfoDialog from "./dialog/UserInfoDialog";
 import axiosInstance from "../../utils/axiosInstance";
 
@@ -14,7 +13,6 @@ function PlayerList() {
   const { gameSocket, chatSocket, allPlayers, blackList } = useContext(UserContext);
   const throwAsyncError = useThrowAsyncError();
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [selectedGames, setSelectedGames] = useState<GameMdl[] | null>(null);
   const [gameInvitationError, setGameInvitationError] = useState<string>("");
   const [display, setDisplay] = useState<boolean>(false);
   const [friendsList, setFriendsList] = useState<User[]>([]);
@@ -79,21 +77,8 @@ function PlayerList() {
    ** ********************************************************************************
    */
 
-  const generateUserList = (filteredUsers: User[]) => {
-    return filteredUsers.map((filteredUser) => (
-      <ListItem key={filteredUser.id} button onClick={() => openUserDialog(filteredUser)} className="PlayerList__item">
-        <ListItemAvatar>
-          <Avatar src={filteredUser.imageUrl} alt={filteredUser.nickname} className="PlayerList__avatar" />
-        </ListItemAvatar>
-        <ListItemText primary={filteredUser.nickname} primaryTypographyProps={{ className: "PlayerList__text" }} />
-        <div className={`PlayerList__status ${filteredUser.online ? (filteredUser.isPlaying ? "playing" : "online") : "offline"}`} />
-      </ListItem>
-    ));
-  };
-
   const openUserDialog = async (user: User) => {
     setDisplay(true); // TEST LENA
-    setSelectedUser(user);
     const tmpUser = await axiosInstance.post("user/userById", user);
     setSelectedUser(tmpUser.data);
   };
@@ -101,7 +86,6 @@ function PlayerList() {
   const closeUserDialog = () => {
     setDisplay(false);
     setSelectedUser(null);
-    setSelectedGames(null);
   };
 
   function userIsFriend(user: User | null, friends: User[]) {
@@ -168,6 +152,18 @@ function PlayerList() {
    ** ********************************************************************************
    */
 
+  const generateUserList = (filteredUsers: User[]) => {
+    return filteredUsers.map((filteredUser) => (
+      <ListItem key={filteredUser.id} button onClick={() => openUserDialog(filteredUser)} className="PlayerList__item">
+        <ListItemAvatar>
+          <Avatar src={filteredUser.imageUrl} alt={filteredUser.nickname} className="PlayerList__avatar" />
+        </ListItemAvatar>
+        <ListItemText primary={filteredUser.nickname} primaryTypographyProps={{ className: "PlayerList__text" }} />
+        <div className={`PlayerList__status ${filteredUser.online ? (filteredUser.isPlaying ? "playing" : "online") : "offline"}`} />
+      </ListItem>
+    ));
+  };
+
   return (
     <Paper elevation={3} sx={{ marginTop: 2, overflowY: "auto", height: "calc(100vh - 120px)", border: `1px solid #366873` }}>
       {gameInvitationError && <Typography color="error">{gameInvitationError}</Typography>}
@@ -186,13 +182,12 @@ function PlayerList() {
       </List>
 
       {display && (
-          <UserInfoDialog
-            selectedUser={selectedUser}
-            selectedGames={selectedGames}
-            closeUserDialog={closeUserDialog}
-            isFriends={userIsFriend(selectedUser, friendsList)}
-            isBlocked={userIsBlocked(selectedUser, blackList)}
-          />
+        <UserInfoDialog
+          selectedUser={selectedUser}
+          closeUserDialog={closeUserDialog}
+          isFriends={userIsFriend(selectedUser, friendsList)}
+          isBlocked={userIsBlocked(selectedUser, blackList)}
+        />
       )}
     </Paper>
   );

@@ -2,7 +2,6 @@
 import React, { useContext, useEffect, useState } from "react";
 import { P5CanvasInstance, ReactP5Wrapper } from "@p5-wrapper/react";
 import { UserContext } from "../../App";
-import { VarGame } from "../../model/VarGame";
 import * as CONSTANTS from "./constants";
 import { User } from "../../model/User";
 import p5 from "p5";
@@ -13,6 +12,18 @@ interface DrawSketchProps {
   joinPlayerL: User;
   room: string;
   setWinner: React.Dispatch<React.SetStateAction<string>>;
+}
+
+interface VarGame {
+  yBall: number;
+  xBall: number;
+  yPadR: number;
+  yPadL: number;
+  scoreL: number;
+  scoreR: number;
+  xSpeed: number;
+  ySpeed: number;
+  isSpeed : boolean;
 }
 
 const DrawSketch: React.FC<DrawSketchProps> = ({ setGameStatus, hostPlayerR, joinPlayerL, room, setWinner }) => {
@@ -126,7 +137,6 @@ const DrawSketch: React.FC<DrawSketchProps> = ({ setGameStatus, hostPlayerR, joi
             width: divElement.clientWidth * 0.9,
             height: divElement.clientWidth * 0.9 * (3 / 5),
           });
-          console.log("HERE");
         }
       };
       updateCanvasSize();

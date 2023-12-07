@@ -1,6 +1,17 @@
 //TO DO CLEAN USER
 
-import { GameMdl } from "./GameMdl";
+interface GameMdl {
+  id: string;
+  players: User[];
+  scoreR: number;
+  scoreL: number;
+  error: string;
+  mode: string;
+  status: string;
+  winnerId: string;
+  type: string;
+  owner: User;
+}
 
 export interface User {
     id: string;

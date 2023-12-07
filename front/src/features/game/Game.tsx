@@ -1,16 +1,27 @@
 import { useContext, useEffect, useState } from "react";
 import { UserContext } from "../../App";
 import { User } from "../../model/User";
-import { GameMdl } from "../../model/GameMdl";
 import { io } from "socket.io-client";
 import * as CONSTANTS from "./constants";
 import { GameMessage } from "../../common/display/DisplayMessage";
 import { GameResponse } from "../../model/GameResponse";
 import baseURL from "../../utils/baseURL";
 import { Cookies } from "react-cookie";
-import axiosInstance from "../../utils/axiosInstance";
 import DrawSketch from "./DrawSketch";
 import { Box, Typography } from "@mui/material";
+
+interface GameMdl {
+  id: string;
+  players: User[];
+  scoreR: number;
+  scoreL: number;
+  error: string;
+  mode: string;
+  status: string;
+  winnerId: string;
+  type: string;
+  owner: User;
+}
 
 function Game() {
   const cookies = new Cookies();
@@ -23,20 +34,10 @@ function Game() {
   const [hostPlayerR, setHostPlayer] = useState<User | null>(null);
   const [joinPlayerL, setJoinPlayer] = useState<User | null>(null);
 
-  async function checkUserInGame() {
-    try {
-      const response = await axiosInstance.get("/user/isPlaying");
-      if (response.data) setGameStatus("PAUSE");
-    } catch (error) {
-      console.error("Error checking if user is in game", error);
-    }
-  }
-
   useEffect(() => {
     const socket = io(baseURL + "/game", { forceNew: true, query: { tokenJwt: cookies.get("jwt") } });
     setGameSocket(socket);
 
-    checkUserInGame();
     return () => {
       if (socket) socket.disconnect();
     };
@@ -46,9 +47,7 @@ function Game() {
     if (!gameSocket) return;
 
     const onJoinedGame = (game: GameMdl) => {
-      if (game.error) {
-        return;
-      }
+      if (game.error) return;
       setGameStatus(game.status);
       setRoom(game.id);
 

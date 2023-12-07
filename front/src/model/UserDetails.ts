@@ -1,4 +1,17 @@
-import { GameMdl } from "./GameMdl";
+import { User } from "./User";
+
+interface GameMdl {
+  id: string;
+  players: User[];
+  scoreR: number;
+  scoreL: number;
+  error: string;
+  mode: string;
+  status: string;
+  winnerId: string;
+  type: string;
+  owner: User;
+}
 
 export interface UserDetails {
     id: string;

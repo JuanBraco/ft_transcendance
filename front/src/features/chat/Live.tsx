@@ -22,7 +22,6 @@ import { Cookies } from "react-cookie";
 import { fetchSelectedChannel } from "./fetchData";
 import LiveRestrictedArea from "./LiveRestrictedArea";
 
-
 interface Props {
   channel: Channel;
   isMember: boolean;
@@ -32,7 +31,7 @@ interface Props {
   channelInvited: User[];
   gameInvitations: GameInvitation[];
   setGameInvitations: React.Dispatch<React.SetStateAction<GameInvitation[]>>;
-  friendRequest:string[];
+  friendRequest: string[];
   setFriendRequests: React.Dispatch<React.SetStateAction<string[]>>;
 }
 
@@ -47,62 +46,52 @@ function Live({
   setGameInvitations,
   friendRequest,
   setFriendRequests,
-  }: Props) {
+}: Props) {
   /*
    ** ********************************************************************************
    ** VARIABLES
    ** ********************************************************************************
    */
-  // console.log("Debut fonction Live isPlaying:", isPlaying);
-  const { user,  gameSocket, chatSocket, blackList, setGameSocket }   = useContext(UserContext);
-  const throwAsyncError                                               = useThrowAsyncError();
-  const [isRestricted, setRestricted]                                 = useState(false);
-  // const navigate                                                      = useNavigate();
-  const cookies                                                       = new Cookies();
+  const { user, gameSocket, chatSocket, blackList, setGameSocket } = useContext(UserContext);
+  const throwAsyncError = useThrowAsyncError();
+  const [isRestricted, setRestricted] = useState(false);
+  const cookies = new Cookies();
 
-  let isInvitedGame                                                   = false;
-  let isInvitedGameWait                                               = false;
-  let isInvitedGameRedirect                                           = false;
-  let isRequestedFriend                                               = false;
-  let isInvited                                                       = false;
+  let isInvitedGame = false;
+  let isInvitedGameWait = false;
+  let isInvitedGameRedirect = false;
+  let isRequestedFriend = false;
+  let isInvited = false;
   const location = useLocation();
 
   const myGameInvitations = gameInvitations.filter((invite) => {
-    if (invite.dmName === channel.name)
-      return true;
+    if (invite.dmName === channel.name) return true;
     return false;
   });
   try {
     if (myGameInvitations.length !== 0 || friendRequest.length !== 0) {
-      if (myGameInvitations.length !== 0){
+      if (myGameInvitations.length !== 0) {
         isInvitedGame = true;
         if (isPlaying) {
           isInvitedGameWait = true;
-        } else if (location.pathname !== '/') {
+        } else if (location.pathname !== "/") {
           isInvitedGameRedirect = true;
         }
-        // console.log("isPlaying:", isPlaying); 
-        // console.log("isInvitedGame:", isInvitedGame);
-        // console.log("isInvitedGameWait:", isInvitedGameWait);
-        // console.log("isInvitedGameRedirect:", isInvitedGameRedirect);
       }
-      if (friendRequest.length !== 0)
-        isRequestedFriend = true;
+      if (friendRequest.length !== 0) isRequestedFriend = true;
     } else {
-      if (!isBlocked(channel.label)){
-        const invitedNicknames = channelInvited.map(
-          (invited) => invited.nickname
-        );
+      if (!isBlocked(channel.label)) {
+        const invitedNicknames = channelInvited.map((invited) => invited.nickname);
         isInvited = invitedNicknames.indexOf(user!.nickname) !== -1;
       }
     }
     fetchSelectedChannel(channel.id)
-      .then((channelDB:Channel) => {
+      .then((channelDB: Channel) => {
         if (channelDB.type === "PROTECTED" && !isMember) {
           setRestricted(true);
         }
       })
-      .catch(error => throwAsyncError(error));
+      .catch((error) => throwAsyncError(error));
   } catch (error) {
     throwAsyncError(error);
   }
@@ -111,78 +100,57 @@ function Live({
    ** ********************************************************************************
    ** FUNCTIONS
    ** ********************************************************************************
-  */
+   */
 
-  function isBlocked(playerNickname:string){   
+  function isBlocked(playerNickname: string) {
     const found = blackList.find(({ nickname }) => nickname === playerNickname);
-    if (found)
-      return true;
+    if (found) return true;
     return false;
-  } 
+  }
 
   function sendMessage(message: string) {
     // console.log("Debut fonction sendMessage");
     return new Promise((resolve, reject) => {
-      return chatSocket!.emit(
-        "createMessage",
-        { channelName: channel.name, message: message },
-        (response: ChatResponse) => {
-          if (!response.ok) return reject(false);
-          return resolve(true);
-        }
-      );
+      return chatSocket!.emit("createMessage", { channelName: channel.name, message: message }, (response: ChatResponse) => {
+        if (!response.ok) return reject(false);
+        return resolve(true);
+      });
     });
   }
 
   function joinChannel(auto: boolean) {
-    // console.log("Debut fonction joinChannel");
     return new Promise((resolve, reject) => {
-      return chatSocket!.emit(
-        "joinChannel",
-        { channelName: channel.name, auto: auto },
-        (response: ChatResponse) => {
-          if (!response.ok) 
-            return reject(false);
-          return resolve(true);
-        }
-      );
+      return chatSocket!.emit("joinChannel", { channelName: channel.name, auto: auto }, (response: ChatResponse) => {
+        if (!response.ok) return reject(false);
+        return resolve(true);
+      });
     });
   }
 
-  function acceptGameInvitation () {
-    // navigate("/");  
+  function acceptGameInvitation() {
     try {
       setGameInvitations(
         gameInvitations.filter((invite) => {
-          if (invite.dmName === channel.name) 
-          return false;
-        return true;
-      })
+          if (invite.dmName === channel.name) return false;
+          return true;
+        })
       );
-      if (!gameSocket!.connected){
+      if (!gameSocket!.connected) {
         const socket = io(baseURL + "/game", {
-            forceNew: true,
-            query: { tokenJwt: cookies.get("jwt") },
+          forceNew: true,
+          query: { tokenJwt: cookies.get("jwt") },
         });
-          setGameSocket(socket);
-        // console.log('BEFORE JOIN INVIT', gameSocket)
+        setGameSocket(socket);
         socket!.emit("joinInvitation", myGameInvitations[0].gameId, (response: ChatResponse) => {
-        // console.log('AFTER JOIN INVIT', gameSocket)
-
-
           if (!response.ok) {
             throw Error(response.statusText);
-          } else {
-            // console.log("RESPONSE GAME INVIT", response);
           }
         });
       } else {
         gameSocket!.emit("joinInvitation", myGameInvitations[0].gameId, (response: ChatResponse) => {
           if (!response.ok) {
             throw Error(response.statusText);
-          } else {
-            // console.log("RESPONSE GAME INVIT", response);
-          } 
+          }
         });
       }
       sendMessage("Game invitation accepted.");
@@ -190,18 +158,17 @@ function Live({
       throwAsyncError(error);
     }
   }
-  
-  function acceptFriendRequest(){
+
+  function acceptFriendRequest() {
     try {
       setFriendRequests(
         friendRequest.filter((invite) => {
-          if (invite === channel.label)
-            return false;
+          if (invite === channel.label) return false;
           return true;
         })
       );
       const friendNickname = channel.label;
-      chatSocket!.emit("addFriend", {friendNickname});
+      chatSocket!.emit("addFriend", { friendNickname });
       sendMessage("Friend request accepted.");
     } catch (error) {
       throwAsyncError(error);
@@ -215,7 +182,6 @@ function Live({
 
   const newMessage = useRef<HTMLInputElement>(null);
   const handleSubmitNewMessage = (event: React.FormEvent) => {
-    // console.log("Debut fonction handleSubmitNewMessage");
     event.preventDefault();
     try {
       if (newMessage.current) {
@@ -241,7 +207,6 @@ function Live({
   };
 
   const handleAcceptJoinChannel = (event: React.FormEvent) => {
-    // console.log("Debut fonction handleAcceptJoinChannel");
     event.preventDefault();
     try {
       joinChannel(false).catch((error) => {
@@ -253,31 +218,29 @@ function Live({
   };
 
   const handleAcceptGame = (event: React.FormEvent) => {
-    // console.log("Debut fonction handleAcceptGame");
     event.preventDefault();
     try {
       if (isMember) {
         acceptGameInvitation();
       } else {
-        joinChannel(true)
-          .then(() => {acceptGameInvitation()});
+        joinChannel(true).then(() => {
+          acceptGameInvitation();
+        });
       }
     } catch (error) {
       throwAsyncError(error);
     }
   };
 
-
-
   const handleAcceptFriendRequest = (event: React.FormEvent) => {
-    // console.log("Debut fonction handleAcceptFriendRequest");
     event.preventDefault();
     try {
       if (isMember) {
         acceptFriendRequest();
       } else {
-        joinChannel(true)
-          .then(() => {acceptFriendRequest()})
+        joinChannel(true).then(() => {
+          acceptFriendRequest();
+        });
       }
     } catch (error) {
       throwAsyncError(error);
@@ -290,7 +253,7 @@ function Live({
    ** ********************************************************************************
    */
   if (isRestricted) {
-    return <LiveRestrictedArea channel={channel} />
+    return <LiveRestrictedArea channel={channel} />;
   }
 
   return (
@@ -302,52 +265,16 @@ function Live({
         {isInvitedGame && !isInvitedGameRedirect && !isInvitedGameWait && (
           <span>
             You are invited to join a game
-            <RiCheckboxCircleFill
-              title="Accept"
-              className="Live__invitIcons accept"
-              onClick={handleAcceptGame}
-            />
+            <RiCheckboxCircleFill title="Accept" className="Live__invitIcons accept" onClick={handleAcceptGame} />
           </span>
         )}
-        {isInvitedGameRedirect && (
-          <span>
-            You are invited to join a game: please go to the Game page to accept invitation.
-          </span>
-        )}
-        {isInvitedGameWait && (
-          <span>
-            You are invited to join a game: you can accept invitation when the game is finished.
-          </span>
-        )}
-{/*         {isInvitedGame && (
-          <>
-          {location.pathname === '/' ? (
-          <>
-            <span>
-              You are invited to join a game
-              <RiCheckboxCircleFill
-                title="Accept"
-                className="Live__invitIcons accept"
-                onClick={handleAcceptGame}
-              />
-            </span>
-            </>
-            ) : (
-              <p>Please go to the Game page to accept invitation</p>
-            )
-
-          }
-          </>
-        )} */}
+        {isInvitedGameRedirect && <span>You are invited to join a game: please go to the Game page to accept invitation.</span>}
+        {isInvitedGameWait && <span>You are invited to join a game: you can accept invitation when the game is finished.</span>}
         {isRequestedFriend && (
           <>
             <span>
               You received a friend request
-              <RiCheckboxCircleFill
-                title="Accept"
-                className="Live__invitIcons accept"
-                onClick={handleAcceptFriendRequest}
-              />
+              <RiCheckboxCircleFill title="Accept" className="Live__invitIcons accept" onClick={handleAcceptFriendRequest} />
             </span>
           </>
         )}
@@ -355,23 +282,13 @@ function Live({
           <>
             <span>
               You are invited to join this channel
-              <RiCheckboxCircleFill
-                title="Accept"
-                className="Live__invitIcons accept"
-                onClick={handleAcceptJoinChannel}
-              />
+              <RiCheckboxCircleFill title="Accept" className="Live__invitIcons accept" onClick={handleAcceptJoinChannel} />
             </span>
           </>
         )}
       </div>
       <form onSubmit={(e) => handleSubmitNewMessage(e)}>
-        <input
-          ref={newMessage}
-          className="inputChat"
-          type="text"
-          placeholder={"Message #" + channel.name}
-          disabled={!canWrite}
-        />
+        <input ref={newMessage} className="inputChat" type="text" placeholder={"Message #" + channel.name} disabled={!canWrite} />
       </form>
     </div>
   );
