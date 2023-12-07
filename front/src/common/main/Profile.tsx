@@ -263,9 +263,6 @@ function Profile() {
               <Typography variant="body2">
                 <b>{getNumberOfVictories()}</b> Victories
               </Typography>
-              <Typography variant="body2">
-                <b>{getNumberOfFriends()}</b> Friends
-              </Typography>
               {user?.expert && (
                 <Typography variant="body2">
                   <MilitaryTechIcon style={{ color: "gold" }}></MilitaryTechIcon>Expert

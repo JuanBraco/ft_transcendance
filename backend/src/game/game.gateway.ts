@@ -13,6 +13,7 @@ import { UserService } from 'src/user/user.service';
 import { GameService } from './game.service';
 import { GameResponse } from './game.interface';
 import { UserGateway } from 'src/user/user.gateway';
+import { GameState } from './game.state';
 
 @WebSocketGateway({
   cors: { origin: process.env.FRONT_URL },
@@ -26,13 +27,45 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private gameService: GameService
   ) {}
 
+  private gameStates: Map<string, GameState> = new Map();
+  private gameLoops: Map<string, NodeJS.Timer> = new Map();
+
+  private startGameLoop(roomId: string): void {
+    if (!this.gameStates.has(roomId)) {
+      const gameState = new GameState();
+      this.gameStates.set(roomId, gameState);
+    }
+
+    const gameState = this.gameStates.get(roomId);
+
+    const gameLoop = setInterval(() => {
+      gameState.update();
+      const stat = gameState.getState();
+      if (stat.scoreL == 3 || stat.scoreR == 3) {
+        this.gameService.storeScore(roomId, stat.scoreR, stat.scoreL, true);
+        this.stopGameLoop(roomId);
+      }
+      this.server.to(roomId).emit('gameStateUpdate', gameState.getState());
+    }, 1000 / 60) as any;
+
+    this.gameLoops.set(roomId, gameLoop);
+  }
+
+  private stopGameLoop(roomId: string): void {
+    const gameLoop = this.gameLoops.get(roomId);
+    if (gameLoop) {
+      clearInterval(gameLoop as any);
+      this.gameStates.delete(roomId);
+      this.gameLoops.delete(roomId);
+    }
+  }
+
   @WebSocketServer()
   server: Server;
 
   async handleConnection(client: Socket): Promise<void> {
     try {
       const user = await this.userService.getUserFromToken(client.handshake.query.tokenJwt);
-      console.log('HANDLE CONNECT GAME');
       if (!user) {
         client.emit('error', 'Invalid user token');
         client.disconnect();
@@ -65,7 +98,9 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       await this.gameService.updatePlaying(userId);
       this.userGateway.playersStatusUpdate();
 
-      console.log('HANDLE CONNECT GAME22');
+      if (gameStatusToUpdate === 'LIVE') {
+        this.startGameLoop(userGamePaused.id);
+      }
 
       // Join the user to the game room and notify other players
       await client.join(userGamePaused.id);
@@ -77,21 +112,21 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   async handleDisconnect(client: Socket): Promise<void> {
     try {
-      console.log('HANDLE DISCONNECT');
       if (!client.data.user) return;
       const userId = client.data.user.id;
-      if (!userId) {
-        return;
-      }
+      if (!userId) return;
       const activeGame = await this.gameService.getActiveGames(userId);
       if (!activeGame) {
         this.gameService.updateUserPlaying(client.data.user, false);
         return;
       }
       const updatedGame = await this.gameService.pauseGame(activeGame.id);
-      console.log('HANDLE DISCONNECT2');
       this.gameService.updateUserPlaying(client.data.user, false);
       this.userGateway.playersStatusUpdate();
+      const gameLoop = this.gameLoops.get(activeGame.id);
+      if (gameLoop) {
+        clearInterval(gameLoop as any);
+      }
       this.server.to(activeGame.id).emit('opponentDisconnected', updatedGame);
     } catch (error) {
       throw error;
@@ -149,46 +184,32 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   @SubscribeMessage('joinInvitation')
   async joinInvitation(@ConnectedSocket() client: any, @MessageBody() gameId: string): Promise<GameResponse> {
-    console.log('JOINEDDD GAMEEEEE');
     const createGameResponse = (ok: boolean, statusText: string) => ({
       ok,
-      status: '', // If status is meant to be set dynamically, you could pass this as a parameter.
+      status: '',
       statusText,
     });
 
     try {
       const isInLiveGame = await this.gameService.isUserInLiveGame(client.data.user.id);
-      if (isInLiveGame) {
-        return createGameResponse(false, 'User already in a Live Game');
-      }
+      if (isInLiveGame) return createGameResponse(false, 'User already in a Live Game');
       let updatedGame = await this.gameService.addUsertoGame(client.data.user, gameId);
       const updatedUser = this.gameService.updateUserPlaying(client.data.user, true);
-      if (!updatedGame || !updatedUser) {
-        return createGameResponse(false, 'Error updating the game with the user.');
-      }
-      // if(!updatedGame.players[0].isPlaying || !updatedGame.players[1].isPlaying) {
-      //   updatedGame = await this.prisma.game.update({
-      //     where: { id: gameId },
-      //     data: {
-      //       status: 'PAUSE',
-      //     },
-      //     include: { players: true, owner: true },
-      //   });
-      // }
-
+      if (!updatedGame || !updatedUser) return createGameResponse(false, 'Error updating the game with the user.');
       client.join(updatedGame.id);
       this.server.to(updatedGame.id).emit('joinedGame', updatedGame);
+      this.startGameLoop(updatedGame.id);
       return createGameResponse(true, '');
     } catch (error) {
       return createGameResponse(false, `Error in joining the invitation: ${error.message}`);
     }
   }
 
-  @SubscribeMessage('joinGame') // if game already created join it otherwise create it
+  @SubscribeMessage('joinGame')
   async joinGame(@ConnectedSocket() client: any): Promise<GameResponse> {
     const createGameResponse = (ok: boolean, statusText: string) => ({
       ok,
-      status: '', // If status is used, it should be set appropriately.
+      status: '',
       statusText,
     });
 
@@ -204,17 +225,9 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         let updatedGame = await this.gameService.addUsertoGame(client.data.user, lowestPositionGame.id);
         if (updatedGame) {
           await this.gameService.updateUserPlaying(client.data.user, true);
-          // if(!updatedGame.players[0].isPlaying || !updatedGame.players[1].isPlaying) {
-          //   updatedGame = await this.prisma.game.update({
-          //     where: { id: lowestPositionGame.id },
-          //     data: {
-          //       status: 'PAUSE',
-          //     },
-          //     include: { players: true, owner: true },
-          //   });
-          // }
           await client.join(updatedGame.id);
           this.server.to(updatedGame.id).emit('joinedGame', updatedGame);
+          this.startGameLoop(updatedGame.id);
           return createGameResponse(true, '');
         } else {
           return createGameResponse(false, "Error in <joinSocketToGame>: This User can't be added to the game.");
@@ -240,9 +253,16 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   @SubscribeMessage('startPowerUp')
   async startPowerUp(@ConnectedSocket() client: any, @MessageBody() data: any) {
-    if (data.roomId) {
+    const roomId = data.room;
+    const gameState = this.gameStates.get(roomId);
+    if (!gameState) {
+      // Handle the case where the game state does not exist for the room
+      return;
+    }
+    gameState.updateSpeedMode(data.isSpeed);
+    if (roomId) {
       const game = await this.prisma.game.update({
-        where: { id: data.roomId },
+        where: { id: roomId },
         data: { mode: 'SPEED' },
       });
       this.server.to(game.id).emit('updateMode', game);
@@ -251,40 +271,19 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   @SubscribeMessage('storeScore')
   async storeScore(@MessageBody() data: any, @ConnectedSocket() client: any) {
-    this.gameService.storeScore(data.gameId, data.scoreR, data.scoreL, data.winner, data.end);
-    if (data.end) {
-      const user = await this.prisma.user.findUnique({
-        where: { id: client.data.user.id },
-      });
-      const gamePlayer = await this.prisma.game.findUnique({
-        where: { id: data.gameId },
-        include: {
-          players: true,
-        },
-      });
-      //console.log('USERRR', user);
-      //this.server.to(data.gameId).emit('getScore', { user: user, player: gamePlayer.players[0].id === user.id ? gamePlayer.players[1] : gamePlayer.players[0] });
-    }
+    this.gameService.storeScore(data.gameId, data.scoreR, data.scoreL, data.end);
   }
 
-  /*@SubscribeMessage('getScore')
-  async getScore(@MessageBody() roomId: any, @ConnectedSocket() client: any) {
-    if (roomId) {
-      const game = await this.prisma.game.findUnique({
-        where: {
-          id: roomId,
-        },
-      });
-      this.server.to(game.id).emit('getScore', game);
-    }
-  }*/
-
-  @SubscribeMessage('move')
+  @SubscribeMessage('paddleMove')
   makeMoveLeftDw(@MessageBody() data: any, @ConnectedSocket() client: any): void {
-    client.to(data.room).emit('move', data);
-  }
-  @SubscribeMessage('start')
-  makeStart(@MessageBody() data: any, @ConnectedSocket() client: any): void {
-    client.to(data.room).emit('start', data);
+    const roomId = data.room;
+    const gameState = this.gameStates.get(roomId);
+    if (!gameState) {
+      // Handle the case where the game state does not exist for the room
+      return;
+    }
+
+    gameState.updatePaddlePosition(data.yPadR, data.yPadL);
+    // client.to(roomId).emit('move', data);
   }
 }

@@ -60,26 +60,49 @@ export class GameService {
         });
         return updatedGame;
       }
-
-
-
     } catch (error) {
       throw error;
     }
   }
 
-  async storeScore(gameId: string, scoreR: number, scoreL: number, winner: User, end: boolean) {
+  async storeScore(gameId: string, scoreR: number, scoreL: number, end: boolean) {
     try {
-      console.log('WINNER', winner)
       if (gameId && end) {
+        const game = await this.prisma.game.findUnique({
+          where: { id: gameId },
+          include: {
+            owner: true,
+            players: true,
+          },
+        });
+
+        if (!game) {
+          throw new Error('Game not found');
+        }
+
+        let winnerId: string;
+
+        if (scoreR > scoreL) {
+          winnerId = game.ownerId; // Owner wins
+        } else {
+          const otherPlayer = game.players.find((player) => player.id !== game.ownerId);
+          winnerId = otherPlayer ? otherPlayer.id : null; // Other player wins, if exists
+        }
+
+        if (winnerId) {
+          await this.prisma.game.update({
+            where: { id: gameId },
+            data: { winnerId, finished: true },
+          });
+        }
+
         const updatedGame = await this.prisma.game.update({
           where: { id: gameId },
           data: {
             scoreR: scoreR,
             scoreL: scoreL,
-            winner: { connect: { id: winner.id } },
+            winner: { connect: { id: winnerId } },
             status: 'ENDED',
-            
           },
           include: {
             players: true,
@@ -87,9 +110,9 @@ export class GameService {
         });
         this.removeUserPlaying(updatedGame.players[0]);
         this.removeUserPlaying(updatedGame.players[1]);
-        if (winner) {
+        if (winnerId) {
           const winnerDetail = await this.prisma.user.findUnique({
-            where: { id: winner.id },
+            where: { id: winnerId },
             include: { winnerOf: true },
           });
 
@@ -103,7 +126,7 @@ export class GameService {
         return updatedGame;
       }
       if (gameId && !end) {
-        console.log('HEREEEEE GAME SCOREEEEE', scoreL, scoreR)
+        console.log('HEREEEEE GAME SCOREEEEE', scoreL, scoreR);
         const updatedGame2 = await this.prisma.game.update({
           where: { id: gameId },
           data: {
@@ -120,7 +143,7 @@ export class GameService {
     }
   }
 
-  async updateUserPlaying(user: User, playing : boolean) {
+  async updateUserPlaying(user: User, playing: boolean) {
     await this.prisma.user.update({
       where: { id: user.id },
       data: {
@@ -179,7 +202,7 @@ export class GameService {
     const updatedGame = await this.prisma.game.update({
       where: { id: gameId },
       data: { status: gameStatus },
-      include: { players: true, owner:true },
+      include: { players: true, owner: true },
     });
 
     return updatedGame;

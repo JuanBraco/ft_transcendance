@@ -192,9 +192,8 @@ const Main: React.FC = () => {
           <Chat />
         </div>
       ) : (
-        <Box sx={{ textAlign: "center" }}>
-          <Typography></Typography>
-        </Box>
+       <div className="text-center">
+        </div>
       )}
 
       <SettingsDialog display={display} setDisplay={setDisplay} />
