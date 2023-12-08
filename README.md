@@ -17,7 +17,7 @@ This project incorporates a chat system and a multiplayer ping pong game, both l
 
 ## Project Architecture
 
-This project is based on a multi-service architecture, including a Postgres database, a React.js application for the frontend, a Nest.js application for the backend, and a dedicated file service handled by Nginx for serving static files.
+This project is based on a multi-service architecture, including a Postgres database, a React.js application for the frontend, a Nest.js application for the backend.
 
 ### Services Overview
 - 🗄️ **Postgres Database (db service):** This service acts as the central database for the application. All user data, game data, and chat logs are stored here.
