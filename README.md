@@ -22,6 +22,6 @@ This project is based on a multi-service architecture, including a Postgres data
 ### Services Overview
 - 🗄️ **Postgres Database (db service):** This service acts as the central database for the application. All user data, game data, and chat logs are stored here.
 
-- 🌐 **Next.js Application (next-app service):** This service handles the frontend of the application. It renders the user interface, handles user inputs, and communicates with the backend service.
+- 🌐 **React.js Application (vite service):** This service handles the frontend of the application. It renders the user interface, handles user inputs, and communicates with the backend service.
 
 - 🚀 **Nest.js Application (nest-app service):** This service is the backbone of the application. It manages the business logic, handles database operations, and communicates with the frontend service via API endpoints. It uses Server-Sent Events (SSE) to power the chat system, delivering real-time messaging and notifications. Socket.IO is used for the multiplayer ping pong game, enabling real-time, interactive gameplay.
